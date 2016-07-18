@@ -1,0 +1,60 @@
+
+
+#accessing gennum* files from hdfs
+
+show_views_file=sc.textFile("input3/join2_gennum?.txt")
+
+show_views_file.take(2)
+
+#parsing each line into show and no. of views pairs
+
+def split_show_views(line):
+    pair=line.split(",")
+    show=pair[0]
+    views=int(pair[1])
+    return(show, views)
+show_views=show_views_file.map(split_show_views)
+show_views.collect()
+
+
+#accessing genchan* files from hdfs
+
+
+show_channel_file=sc.textFile("input3/join2_genchan?.txt")
+
+#splitting each line into show , channel pairs
+
+def split_show_channel(line):
+    pair=line.split(",")
+    show=pair[0]
+    channel=pair[1]
+    return(show,channel)
+show_channel=show_channel_file.map(split_show_channel)
+show_channel.collect()
+
+#joining the 2 datasets with show as key
+
+joined_dataset=show_views.join(show_channel)
+joined_dataset.collect()
+
+
+#extracting channel,views pairs with channel as keys
+
+def extract_channel_views(show_views_channel):
+    pair=show_views_channel
+    pair2=pair[1]
+    channel=pair2[1]
+    views=int(pair2[0])
+    return(channel, views)
+channel_views=joined_dataset.map(extract_channel_views)
+channel_views.collect()
+
+
+#reducing into channel, total no. of viewers pairs
+
+def sum_counts(a,b):
+    return a+b
+channel_views.reduceByKey(sum_counts).collect()
+
+
+
